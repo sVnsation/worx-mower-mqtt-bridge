@@ -1,0 +1,17 @@
+configuration:
+  cloud_username:
+    name: Cloud Username
+  cloud_password:
+    name: Cloud Password
+  cloud_brand_prefix:
+    name: Cloud Brand Prefix
+  private_broker_address:
+    name: Private MQTT Broker Address
+  private_broker_port:
+    name: Private MQTT Broker Port
+  private_broker_username:
+    name: Private MQTT Broker Username
+  private_broker_password:
+    name: Private MQTT Broker Password
+  log_level:
+    name: Log Level

@@ -1,0 +1,38 @@
+name: "Worx Mower MQTT Bridge"
+description: "Integrate Worx, Kress, Landxcape, and Ferrex robotic mowers with Home Assistant using MQTT"
+version: "0.0.174"
+slug: "mower_mqtt_bridge"
+url: "https://github.com/svnsation/automow-mqtt-bridge"
+init: false
+ingress: true
+apparmor: true
+map:
+  - config:ro
+  - ssl:ro
+arch:
+  - aarch64
+  - amd64
+  - armhf
+  - armv7
+  - i386
+startup: system
+services:
+  - mqtt:need
+options:
+  cloud_username: ""
+  cloud_password: ""
+  cloud_brand_prefix: WX
+  private_broker_address: ""
+  private_broker_port: 1883
+  private_broker_username: ""
+  private_broker_password: ""
+  log_level: "info"
+schema:
+  cloud_username: str
+  cloud_password: password
+  cloud_brand_prefix: list(WX|KR|LX|SM)
+  private_broker_address: str?
+  private_broker_port: port?
+  private_broker_username: str?
+  private_broker_password: password?
+  log_level: list(debug|info|warning|error|critical|none)
