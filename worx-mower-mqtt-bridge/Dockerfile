@@ -11,4 +11,6 @@ RUN pip3 install --no-cache-dir requests paho-mqtt~=1.6
 COPY run.sh /
 COPY mower_mqtt_bridge.py /
 
+RUN chmod a+x /run.sh
+
 CMD [ "/run.sh" ]
