@@ -10,6 +10,31 @@ It's also enabling other MQTT-compatible software to access and interact with yo
 
 **Note:** While the code is designed to support multiple mowers, it has currently only been tested with a single mower. Be aware that deploying the system with multiple mowers may require additional testing and potential adjustments to ensure proper functionality across all units.
 
+## Installation
+
+To install this addon you need to add this GitHub repository as a custom add-on to Home Assistant, follow these steps:
+
+1. In the Home Assistant Settings panel click on Add-ons.
+
+2. Click on the "Add-on Store" button on the bottom right.
+
+3. Click on the three dots in the top right corner and select "Repositories".
+
+4. In the "Add repository" field, paste the following URL:
+   ```
+   https://github.com/sVnsation/worx-mower-mqtt-bridge
+   ```
+
+5. Click "Add" to save the repository.
+
+6. The add-on should now appear in your add-on store. Find it in the list and click on it.
+
+7. Click "Install" to add the add-on to your Home Assistant instance.
+
+8. After installation, go to the add-on's Configuration tab and fill in the required fields.
+
+9. Start the add-on and check the logs to ensure it's running correctly.
+
 ## Home Assistant MQTT Broker auto-configuration
 
 If you are using the MQTT Mosquitto broker addon from Home Assistant, you can take advantage of the auto-configuration feature. To use this:
@@ -110,7 +135,7 @@ To create custom template sensors or automations, you can use the following MQTT
    - Command Out Topic: information coming from the mower
    - Command In Topic: send commands or settings to the mower
 
-**Note:** You can look up the both Topics in the Log-Tab of the Addon.
+**Note:** You can look up the both Topics in the Log-Tab of the Addon, with log_level set to debug.
 
 ### Creating Custom Template Sensors
 
