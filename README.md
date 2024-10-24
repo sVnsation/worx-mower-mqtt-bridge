@@ -52,6 +52,8 @@ It automatically creates and configures entities in Home Assistant for your lawn
 
 If you need to customize any of the auto-discovered entities, you can do so through Home Assistant's entity customization options.
 
+![screenshot mqtt integration](https://github.com/sVnsation/worx-mower-mqtt-bridge/blob/main/docs/images/ha_mqtt_integration.png?raw=true "HA MQTT Integration")
+
 ### Auto-discovered Entities
 
 The following entities are automatically created for each mower:
