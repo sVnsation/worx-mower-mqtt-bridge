@@ -3,6 +3,7 @@ import logging
 import requests
 import json
 import ssl
+import threading
 import time
 import urllib.parse
 import os
@@ -163,7 +164,7 @@ class CloudEndpointAPI:
 
     def is_token_expired(self):
         token_expire_state = int(time.time()) >= self.token_expire
-        self._log.debug(f"Auth Token expired = {token_expire_state}")
+        self._log.debug("Auth Token has expired.") if token_expire_state else None
         return token_expire_state
 
     def update_token(self):
@@ -225,6 +226,9 @@ class CloudMQTTClient:
         self.endpoint = None
         self.user_id = None
 
+        self.token_refresh_thread = None
+        self.token_refresh_stop = threading.Event()
+
         self.client = None
 
     def set_private_mqtt_client(self, private_mqtt_client):
@@ -262,13 +266,7 @@ class CloudMQTTClient:
         """MQTT callback method."""
         self._log.debug(f"Cloud MQTT Client disconnect with result code: {rc}")
         if rc == 7 and self.api.is_token_expired():
-            try:
-                self._log.debug("Refresh access token and reconnect.")
-                self.api.update_token()
-                self.set_username_pw()
-                self.client.reconnect()
-            except Exception:
-                self._log.critical("Failed to refresh access token and reconnect.", exc_info=True)
+            self.token_refresh()
         else:
             self._log.debug("Cloud MQTT Client waiting for automatic reconnect to broker.")
 
@@ -281,6 +279,7 @@ class CloudMQTTClient:
         self.api = CloudEndpointAPI(username, password)
         self._log.info(f"Authenticating {username}")
         self.api.get_token()
+        self.start_token_auto_refresh()
         return True
 
     def connect(self):
@@ -317,8 +316,35 @@ class CloudMQTTClient:
 
     def disconnect(self):
         self._log.info("Cloud MQTT Client disconnect")
+        self.stop_token_auto_refresh()
         self.client.disconnect()
 
+    def start_token_auto_refresh(self):
+        if self.token_refresh_thread is None or not self.token_refresh_thread.is_alive():
+            self.token_refresh_stop.clear()
+            self.token_refresh_thread = threading.Thread(target=self.token_refresh_loop, daemon=True)
+            self.token_refresh_thread.start()
+
+    def stop_token_auto_refresh(self):
+        self.token_refresh_stop.set()
+        if self.token_refresh_thread:
+            self.token_refresh_thread.join()
+
+    def token_refresh_loop(self):
+        while not self.token_refresh_stop.is_set():
+            if self.api and self.api.token_expire:
+                if self.api.is_token_expired():
+                    self.token_refresh()
+            time.sleep(10)
+
+    def token_refresh(self):
+        try:
+            self._log.debug("Refresh access token and reconnect.")
+            self.api.update_token()
+            self.set_username_pw()
+            self.client.reconnect()
+        except Exception:
+            self._log.critical("Failed to refresh access token and reconnect.", exc_info=True)
 
 
 class PrivateMQTTClient(mqtt.Client):
