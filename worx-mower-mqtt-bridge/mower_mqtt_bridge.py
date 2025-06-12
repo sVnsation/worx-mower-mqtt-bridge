@@ -11,6 +11,7 @@ import signal
 import paho.mqtt.client as mqtt
 
 from uuid import uuid4
+from datetime import datetime
 
 
 """Setup Log"""
@@ -159,8 +160,9 @@ class CloudEndpointAPI:
             self._log.critical(f"Authentication for {self.username} failed!")
             raise Exception("AuthorizationError: Unauthorized")
 
-        self._log.info("Auth token successfully requested")
         self.token_expire = int(time.time()) + int(response.get("expires_in"))
+        expire_time_str = datetime.fromtimestamp(self.token_expire).strftime('%Y-%m-%d %H:%M:%S')
+        self._log.info(f"Auth token successfully requested, valid until {expire_time_str}")
 
     def is_token_expired(self):
         token_expire_state = int(time.time()) >= self.token_expire
