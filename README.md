@@ -1,4 +1,4 @@
-# Worx Mower MQTT Bridge Addon
+# Worx Mower MQTT Bridge Addon for Home Assistant
 
 ## Overview
 
