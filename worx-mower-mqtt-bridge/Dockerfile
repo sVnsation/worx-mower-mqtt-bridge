@@ -1,5 +1,4 @@
-ARG BUILD_FROM
-FROM $BUILD_FROM
+FROM ghcr.io/home-assistant/base:latest
 
 ENV PIP_BREAK_SYSTEM_PACKAGES=1
 
