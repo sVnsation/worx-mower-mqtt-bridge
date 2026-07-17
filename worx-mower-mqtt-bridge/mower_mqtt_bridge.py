@@ -406,9 +406,36 @@ class MQTTDiscovery:
         self.mowers = mowers
         self.private_mqtt_client = private_mqtt_client
 
+    def resolve_ha_uniq_id(self, mower):
+        """Resolve a unique identifier for a mower in Home Assistant.
+        Prefer `mac_address` if present and not a string like 'None' or 'null'.
+        Otherwise try to read the MAC from the last status payload (`last_status.payload.dat.mac`).
+        As a last resort fall back to `serial_number` or `uuid` to produce a stable identifier.
+        """
+        mac = mower.get('mac_address')
+        if mac and isinstance(mac, str) and mac.lower() not in ('none', 'null', ''):
+            return mac
+
+        # try to read MAC from last_status payload
+        try:
+            last_mac = mower.get('last_status', {}).get('payload', {}).get('dat', {}).get('mac')
+            if last_mac and isinstance(last_mac, str) and last_mac.lower() not in ('none', 'null', ''):
+                return last_mac
+        except Exception:
+            pass
+
+        # fallback: use serial_number or uuid or a generated placeholder
+        serial = mower.get('serial_number')
+        if serial and isinstance(serial, str) and serial.lower() not in ('none', 'null', ''):
+            return serial
+
+        uid = mower.get('uuid') or mower.get('id')
+        return str(uid) if uid is not None else f"UNKNOWN_{uuid4()}"
+
     def send_discovery(self):
         try:
             for mower in self.mowers:
+                mower['ha_uniq_id'] = self.resolve_ha_uniq_id(mower)
                 self.publish_lawn_mower_config(mower)
                 self.publish_switches(mower)
                 self.publish_sensors(mower)
@@ -424,7 +451,7 @@ class MQTTDiscovery:
     def publish_lawn_mower_config(self, mower):
         config = {
             "name": "Lawn Mower",
-            "uniq_id": f"mower_{mower['mac_address']}",
+            "uniq_id": f"mower_{mower['ha_uniq_id']}",
             "activity_state_topic": mower['mqtt_topics']['command_out'],
             "activity_value_template": """
                 {%- set status_map = {
@@ -446,7 +473,7 @@ class MQTTDiscovery:
             "dev": {
                 "mf": CLOUD_NAME,
                 "name": mower['name'],
-                "ids": [mower['mac_address']],
+                "ids": [mower['ha_uniq_id']],
                 "mdl": mower['model']['friendly_name'],
                 "mdl_id": mower['model']['code'],
                 "sw": mower['firmware_version'],
@@ -460,7 +487,7 @@ class MQTTDiscovery:
             "stat_t": mower['mqtt_topics']['command_out'],
             "dev": {
                 "name": mower['name'],
-                "ids": [mower['mac_address']],
+                "ids": [mower['ha_uniq_id']],
             }
         }
 
@@ -468,7 +495,7 @@ class MQTTDiscovery:
         switches = [
             {
                 "name": "Wi-Fi Lock",
-                "uniq_id": f"wifi_lock_{mower['mac_address']}",
+                "uniq_id": f"wifi_lock_{mower['ha_uniq_id']}",
                 "ic": "mdi:lock-open",
                 "val_tpl": "{{ 'ON' if value_json.dat.lk == 1 else 'OFF' }}",
                 "cmd_t": mower['mqtt_topics']['command_in'],
@@ -483,7 +510,7 @@ class MQTTDiscovery:
         sensors = [
             {
                 "name": f"Status",
-                "uniq_id": f"mower_status_{mower['mac_address']}",
+                "uniq_id": f"mower_status_{mower['ha_uniq_id']}",
                 "ic": "mdi:robot-mower-outline",
                 "val_tpl": """
                     {%- set status_map = {
@@ -559,7 +586,7 @@ class MQTTDiscovery:
             },
             {
                 "name": f"Error",
-                "uniq_id": f"mower_error_{mower['mac_address']}",
+                "uniq_id": f"mower_error_{mower['ha_uniq_id']}",
                 "ic": "mdi:alert-circle",
                 "val_tpl": """
                     {%- set mapper = {
@@ -587,14 +614,14 @@ class MQTTDiscovery:
             },
             {
                 "name": f"Battery Level",
-                "uniq_id": f"mower_battery_level_{mower['mac_address']}",
+                "uniq_id": f"mower_battery_level_{mower['ha_uniq_id']}",
                 "unit_of_meas": '%',
                 "dev_cla": 'battery',
                 "val_tpl": "{{ value_json.dat.bt.p | int(0) }}",
             },
             {
                 "name": f"Battery Voltage",
-                "uniq_id": f"mower_battery_voltage_{mower['mac_address']}",
+                "uniq_id": f"mower_battery_voltage_{mower['ha_uniq_id']}",
                 "unit_of_meas": 'V',
                 "dev_cla": 'voltage',
                 "val_tpl": "{{ value_json.dat.bt.v | float(0) }}",
@@ -602,7 +629,7 @@ class MQTTDiscovery:
             },
             {
                 "name": f"Battery Temperature",
-                "uniq_id": f"mower_battery_temperature_{mower['mac_address']}",
+                "uniq_id": f"mower_battery_temperature_{mower['ha_uniq_id']}",
                 "unit_of_meas": '°C',
                 "dev_cla": 'temperature',
                 "val_tpl": "{{ value_json.dat.bt.t | float(0) }}",
@@ -610,14 +637,14 @@ class MQTTDiscovery:
             },
             {
                 "name": f"Battery Cycles",
-                "uniq_id": f"mower_battery_cycles_{mower['mac_address']}",
+                "uniq_id": f"mower_battery_cycles_{mower['ha_uniq_id']}",
                 "val_tpl": "{{ value_json.dat.bt.nr | int(0) }}",
                 "ic": 'mdi:battery-sync',
                 "ent_cat": "diagnostic",
             },
             {
                 "name": f"WiFi Quality",
-                "uniq_id": f"mower_wifi_{mower['mac_address']}",
+                "uniq_id": f"mower_wifi_{mower['ha_uniq_id']}",
                 "val_tpl": "{{ value_json.dat.rsi | int(-100) }}",
                 "dev_cla": "signal_strength",
                 "unit_of_meas": "dBm",
@@ -625,7 +652,7 @@ class MQTTDiscovery:
             },
             {
                 "name": f"Last Update",
-                "uniq_id": f"mower_lastupdate_{mower['mac_address']}",
+                "uniq_id": f"mower_lastupdate_{mower['ha_uniq_id']}",
                 "ic": 'mdi:clock',
                 "val_tpl": "{{ strptime(value_json.cfg.dt + ' ' + value_json.cfg.tm, '%d/%m/%Y %H:%M:%S').strftime('%d.%m.%y %H:%M') }}"
             }
@@ -638,14 +665,14 @@ class MQTTDiscovery:
         binary_sensors = [
             {
                 "name": f"Mowing",
-                "uniq_id": f"mower_mowing_{mower['mac_address']}",
+                "uniq_id": f"mower_mowing_{mower['ha_uniq_id']}",
                 "val_tpl": "{{ 'ON' if value_json.dat.ls == 7 else 'OFF' }}",
                 "dev_cla": "running",
                 "ent_cat": "diagnostic",
             },
             {
                 "name": f"Battery Charging",
-                "uniq_id": f"mower_battery_charging_{mower['mac_address']}",
+                "uniq_id": f"mower_battery_charging_{mower['ha_uniq_id']}",
                 "val_tpl": "{{ 'ON' if value_json.dat.bt.c | int(0) == 1 else 'OFF' }}",
                 "dev_cla": "battery_charging",
                 "ent_cat": "diagnostic",
